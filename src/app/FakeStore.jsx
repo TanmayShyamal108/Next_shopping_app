@@ -1,14 +1,7 @@
-"use client"
-
-import Image from "next/image";
-import styles from "./page.module.css";
 import axios from "axios";
-import MenuIcon from "@mui/icons-material/Menu";
-import ShoppingBagIcon from "@mui/icons-material/ShoppingBag";
-import Button from "@mui/material/Button";
+import { useEffect, useState } from "react";
 import Modal from "@mui/material/Modal";
-import SearchIcon from "@mui/icons-material/Search";
-
+import Button from "@mui/material/Button";
 import {
   Card,
   CardHeader,
@@ -33,26 +26,23 @@ import {
   ListItemIcon,
   ListItemText,
 } from "@mui/material";
-import { useEffect } from "react";
-import { useState } from "react";
-import Link from "next/link";
-import { Delete, Email, Password } from "@mui/icons-material";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import LocalMallIcon from "@mui/icons-material/LocalMall";
+import { Delete, Email, Password } from "@mui/icons-material";
+import MenuIcon from "@mui/icons-material/Menu";
+import SearchIcon from "@mui/icons-material/Search";
+import ShoppingBagIcon from "@mui/icons-material/ShoppingBag";
+import { PriceRange } from "./PriceRange";
+import { Link, redirect, useNavigate } from "react-router-dom";
+import { useCookies } from "react-cookie";
 import { Formik, useFormik } from "formik";
-import Typography from '@mui/material/Typography';
 
-
-
-export default function Home() {
-
+export function FakeStore() {
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
   const [cartCount, setCartCount] = useState(0);
-  const [cartmodalOpen, setcartModalOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [cartItems, setCartItems] = useState([]);
-  const [view, setview] = useState([]);
   const [totalPrice, setTotalPrice] = useState(0);
   const [price, setPrice] = useState(0);
   const mark = [
@@ -66,15 +56,64 @@ export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [anchor, setAnchor] = useState(null);
   const [allSuggestions, setAllSuggestions] = useState([]);
-  // var navigate = useNavigate();
-  // const [cookie, setCookie, removeCookie] = useCookies("user-id");
-  const [user, setuser] = useState([{ UserName: "", UserId: "", Password: "", Email: "", Mobile: "" }]);
+  var navigate = useNavigate();
+  const [cookie, setCookie, removeCookie] = useCookies("user-id");
+  const [user, setuser] = useState([{UserName:"", UserId:"", Password:"", Email:"", Mobile:""}]);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [orderModalOpen, setOrderModalOpen] = useState(false);
   const [customerCareModalOpen, setCustomerCareModalOpen] = useState(false);
   const [logoutModalOpen, setLogoutModalOpen] = useState(false);
 
+  // const formik = useFormik({
+  //   initialValues: {
+  //     UserName: user[0].UserName,
+  //     UserId: user[0].UserId,
+  //     Password:user[0].Password,
+  //     Email: user[0].Email,
+  //     Mobile: user[0].Mobile
+  //   },
+  //   enableReinitialize:true,
+  //   onSubmit:(values) =>{
+  //     axios.put(`http://127.0.0.1:3210/edit-user/${values.UserId}`, values)
+  //     .then(()=>{
+  //       console.log("User Updated");
+  //       navigate("/")
+  //     })
+  //   }
+  // })
+
+  // function LoadForm() {
+  //   if (cookie["user-id"]) {
+  //     const formik = useFormik({
+  //       initialValues: {
+  //         UserName: user[0].UserName,
+  //         UserId: user[0].UserId,
+  //         Password:user[0].Password,
+  //         Email: user[0].Email,
+  //         Mobile: user[0].Mobile
+  //       },
+  //       enableReinitialize:true,
+  //       onSubmit:(values) =>{
+  //         console.log(values)
+  //       }
+  //     });
+  //   } else {
+  //     const formik = useFormik({
+  //       initialValues: {
+  //         UserName: user.UserName,
+  //         UserId: user.UserId,
+  //         Password:user.Password,
+  //         Email: user.Email,
+  //         Mobile: user.Mobile
+  //       },
+  //       enableReinitialize:true,
+  //       onSubmit:(values) =>{
+  //         console.log(values)
+  //       }
+  //     });
+  //   }
+  // }
 
   function LoadCategories() {
     axios
@@ -84,26 +123,54 @@ export default function Home() {
         setCategories(response.data);
       });
   }
+
+  function loaduser() {
+    if (cookie["user-id"] !== undefined) {
+      //setuser(cookie["user-id"]);
+      document.getElementById("greet").innerText = `Welcome ${cookie["user-id"].toUpperCase()}`;
+      //console.log(`Welcome ${cookie["user-id"]}`);
+    } else {
+      document.getElementById("greet").innerText = "";
+    }
+  }
+
   function LoadProducts(url) {
     axios.get(url).then((response) => {
       setProducts(response.data);
     });
   }
-  useEffect(() => {
-    LoadCategories();
-    LoadAllSuggestions();
-    LoadProducts("https://fakestoreapi.com/products");
-    console.log(allSuggestions);
-  }, []);
-  function LoadAllSuggestions() {
-    axios.get("https://fakestoreapi.com/products").then((response) => {
-      let a = response.data;
-      let b = a.map((s) => s.title);
-      console.log(b)
-      setAllSuggestions(b);
 
+  function LoadTitle() {
+    axios.get("https://fakestoreapi.com/products").then((response) => {
+      let t = response.data;
+      setSearchItems(t.map((m) => m.title));
     });
   }
+
+  useEffect(() => {
+    LoadCategories();
+    LoadProducts("https://fakestoreapi.com/products");
+    LoadTitle();
+    LoadAllSuggestions();
+    //console.log(cookie["user-id"])
+    loaduser();
+    //console.log(searchItems);
+    LoadUser();
+    //LoadForm();
+  }, []);
+
+  function handleCategoryChange(e) {
+    if (e.target.value == "all") {
+      LoadProducts("https://fakestoreapi.com/products");
+      setFilterCategory("all");
+    } else {
+      LoadProducts(
+        `https://fakestoreapi.com/products/category/${e.target.value}`
+      );
+      setFilterCategory(e.target.value);
+    }
+  }
+
   function handleNavClick(f) {
     if (f.target.value == "all") {
       LoadProducts("https://fakestoreapi.com/products");
@@ -115,10 +182,42 @@ export default function Home() {
       setFilterCategory(f.target.value);
     }
   }
+
+  function handleAddClick(product) {
+    setCartCount(cartCount + 1);
+    cartItems.push(product);
+    if (totalPrice == 0) {
+      setTotalPrice(product.price);
+    } else {
+      setTotalPrice(totalPrice + product.price);
+    }
+  }
+
+  function handleModalOpen() {
+    setModalOpen(true);
+  }
+
+  function handleModalClose() {
+    setModalOpen(false);
+  }
+
+  function handleRemoveClick(item) {
+    cartItems.splice(cartItems.indexOf(item), 1);
+    setCartCount(cartItems.length);
+    setTotalPrice(totalPrice - item.price);
+  }
+
+  function handleRemoveAllClick() {
+    setCartItems([]);
+    setCartCount(0);
+    setTotalPrice(0);
+  }
+
   function handlePriceChange(e, value) {
     setPrice(value);
     setFilteredProducts(products.filter((p) => p.price <= value));
   }
+
   function handleFilterClick() {
     if (filterCategory === "all") {
       axios.get("http://fakestoreapi.com/products").then((response) => {
@@ -140,6 +239,20 @@ export default function Home() {
     }
   }
 
+  function handleSearch(param, val) {
+    let find = val;
+    const suggestion =
+      find &&
+      searchItems.filter((d) => d.toLowerCase().includes(find.toLowerCase()));
+    setSuggestions(suggestion);
+    console.log(param);
+    console.log(val);
+  }
+
+  function handleMenuClose() {
+    setMenuOpen(false);
+  }
+
   function handleSuggestionChange(e) {
     console.log(e.target.outerText);
     if (e.target.outerText) {
@@ -152,46 +265,33 @@ export default function Home() {
     } else {
     }
   }
-  function handleSearch(param, val) {
-    let find = val;
-    const suggestion =
-      find &&
-      searchItems.filter((d) => d.toLowerCase().includes(find.toLowerCase()));
-    setSuggestions(suggestion);
-    console.log(param);
-    console.log(val);
+
+  function LoadAllSuggestions() {
+    axios.get("https://fakestoreapi.com/products").then((response) => {
+      let a = response.data;
+      let b = a.map((s) => s.title);
+      setAllSuggestions(b);
+    });
+  }
+  function signoutclick() {
+    removeCookie("user-id");
   }
 
-
-  function handleModalOpen() {
-    setModalOpen(true);
-  }
-
-  function handleModalClose() {
-    setModalOpen(false);
-    setcartModalOpen(false);
-  }
-  function handleRemoveClick(item) {
-    cartItems.splice(cartItems.indexOf(item), 1);
-    setCartCount(cartItems.length);
-    setTotalPrice(totalPrice - item.price);
-  }
-  function handleRemoveAllClick() {
-    setCartItems([]);
-    setCartCount(0);
-    setTotalPrice(0);
-  }
-
-  function handleAddClick(product) {
-    
-    setCartCount(cartCount + 1);
-    cartItems.push(product);
-    if (totalPrice == 0) {
-      setTotalPrice(product.price);
+  function handlePurchaseClick() {
+    if (cartCount === 0) {
+      alert("Cart is Empty!");
     } else {
-      setTotalPrice(totalPrice + product.price);
+      if (cookie["user-id"]) {
+        axios.post("http://127.0.0.1:3210/post-product", cartItems).then(() => {
+          console.log("Items Added to Database");
+        });
+        navigate("/payment-gateway");
+      } else {
+        navigate("/login");
+      }
     }
   }
+
   function handleDrawerClick() {
     setDrawerOpen(true);
     console.log(user);
@@ -200,6 +300,23 @@ export default function Home() {
   function handleDrawerClose() {
     setDrawerOpen(false);
   }
+
+  function LoadUser() {
+
+    if(cookie){
+      axios
+      .get(`http://127.0.0.1:3210/get-user/${cookie["user-id"]}`)
+      .then((response) => {
+        let u = response.data;
+        setuser(u);
+        console.log(response.data);
+      });
+    }else{
+      navigate("/")
+    }
+    
+  }
+
   function handleItemButtonClick(e) {
     if (e === "Profile") {
       setProfileModalOpen(true);
@@ -212,55 +329,61 @@ export default function Home() {
       setLogoutModalOpen(true);
     }
   }
+
   function handleAllModalClose() {
     setProfileModalOpen(false);
     setOrderModalOpen(false);
     setCustomerCareModalOpen(false);
     setLogoutModalOpen(false);
   }
+function yesClick(){
+  removeCookie("user-id")
+  navigate("/")
+  alert("Yes clicked")
+ 
 
-  const formik = useFormik({
-    initialValues: {
-      UserId: "",
-      Password: "",
-      Email: "",
-      Mobile: 0
-    },
-    onSubmit: (values) => {
-      console.log(values);
-    },
-  });
-  function handleViewClick(e) {
-    setcartModalOpen(true)
-
-    view.push(e)
-    console.log(view)
-
-  }
-  function handleCartModalClose(){
-    setcartModalOpen(false);
-    setview([]);
-  }
-
-
-
+}
+function noClick(){
+  setLogoutModalOpen(false)
+  
+}
   return (
-    <main className="container-fluid">
+    <div className="container-fluid">
       <div
         id="Header"
         className="d-flex justify-content-between bg-black text-white p-2"
       >
         <div className="d-flex">
-
+          {/* <button className='btn' data-bs-toggle="offcanvas" data-bs-target="userOffcanvas" aria-controls="offcanvasWithBothOptions">*/}
           <IconButton onClick={handleDrawerClick}>
             <MenuIcon sx={{ color: "white" }} fontSize="large" />
           </IconButton>
-
+          {/*</button>*/}
           <ShoppingBagIcon fontSize="large" sx={{ mt: 1.2 }} />
           <h1 className="mt-1">FAKESTORE</h1>
         </div>
+        {/* <div class="offcanvas offcanvas-start" data-bs-scroll="true" tabindex="-1" id="userOffcanvas" aria-labelledby="offcanvasWithBothOptionsLabel">
+                    <div class="offcanvas-header">
+                        <h5 class="offcanvas-title" id="userOffcanvas">Backdrop with scrolling</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+                    </div>
+                    <div class="offcanvas-body">
+                        <p>Try scrolling the rest of the page to see this option in action.</p>
+                    </div> 
+                </div>*/}
         <Drawer open={drawerOpen} onClose={handleDrawerClose}>
-
+          {/* <button className='mt-2' style={{marginLeft:"75px", marginRight:"75px"}}>User Details</button> */}
+          {/* {
+                        user.map(u=>
+                            <List>
+                                <ListItem> User-ID : {u.UserId}</ListItem>
+                                <ListItem> User Name : {u.UserName}</ListItem>
+                                <ListItem> Email : {u.Email}</ListItem>
+                                <ListItem> Mobile : {u.Mobile}</ListItem>
+                                <ListItem className='d-flex justify-content-center'><Button variant='outlined'>Edit<span className='bi bi-pen ms-3'></span></Button></ListItem>
+                            </List>
+                        )
+                    }                        */}
 
           <List>
             {["Profile", "Order", "Customer Care", "Log Out"].map(
@@ -281,7 +404,7 @@ export default function Home() {
                     <ListItemText primary={text} />
                   </ListItemButton>
                 </ListItem>
-              )
+              ) 
             )}
           </List>
         </Drawer>
@@ -292,7 +415,7 @@ export default function Home() {
         >
           <Fade in={profileModalOpen}>
             <div className="modal-content modal-dialog-scrollable bg-white h-75 w-75">
-              <form onSubmit={formik.handleSubmit} className="container-fluid">
+              {/* <form onSubmit={formik.handleSubmit} className="container-fluid">
                 <div className="row">
                   <div className="col-3 ms-4">
                     <h5 className="my-4">User Name</h5>
@@ -317,7 +440,7 @@ export default function Home() {
                       name="UserId"
                       className="form-control my-3 w-50"
                     />
-                    <input
+                     <input
                       type="password"
                       value={formik.values.Password}
                       onChange={formik.handleChange}
@@ -327,7 +450,7 @@ export default function Home() {
                     <input
                       type="text"
                       value={formik.values.Email}
-
+                      readOnly
                       onChange={formik.handleChange}
                       name="Email"
                       className="form-control my-3 w-50"
@@ -341,15 +464,14 @@ export default function Home() {
                     />
                   </div>
                   <div className="text-center">
-                    <button className="btn btn-success text-center" type="submit">SignUP</button>
-                    <Link href="/usersignup">Already have an account</Link>
+                  <button className="btn btn-success text-center" type="submit">Submit</button>
                   </div>
                 </div>
-              </form>
+              </form> */}
             </div>
           </Fade>
         </Modal>
-        {/* <Modal
+        <Modal
           open={orderModalOpen}
           onClose={handleAllModalClose}
           className="d-flex justify-content-center align-items-center"
@@ -384,7 +506,7 @@ export default function Home() {
               </div>
             </div>
           </Fade>
-        </Modal> */}
+        </Modal>
         <div className="mt-2">
           {categories.map((category) => (
             <Button
@@ -401,7 +523,7 @@ export default function Home() {
         </div>
         <div className="mt-2">
           <span className="bi bi-heart-fill me-4"></span>
-          <Link href="/admin" className="bi bi-person-fill me-4"></Link>
+          <Link to="/admin" className="bi bi-person-fill me-4"></Link>
           <button
             className="btn btn-warning bi bi-cart4 position-relative"
             onClick={handleModalOpen}
@@ -411,7 +533,6 @@ export default function Home() {
             </span>
           </button>
         </div>
-
       </div>
       <div id="Body" className="row mt-1">
         <div className="col-2">
@@ -503,18 +624,12 @@ export default function Home() {
                   </dd>
                 </dl>
               </div>
-              <div className="card-footer d-flex justify-content-between m-1 p-1">
+              <div className="card-footer">
                 <button
-                  className="btn btn-dark bi bi-cart4 w-100 me-1"
+                  className="btn btn-dark bi bi-cart4 w-100"
                   onClick={() => handleAddClick(product)}
                 >
-                  Add Cart
-                </button>
-                <button
-                  className="btn btn-danger  w-100"
-                  onClick={() => handleViewClick(product)}
-                >
-                  View Details
+                  Add to Cart
                 </button>
               </div>
             </div>
@@ -555,7 +670,7 @@ export default function Home() {
                         title={item.title}
                         action={
                           <IconButton
-                            // color="error"
+                            color="error"
                             onClick={() => handleRemoveClick(item)}
                           >
                             <Delete fontSize="medium" />
@@ -584,7 +699,7 @@ export default function Home() {
                     </button>
                     <button
                       className="btn btn-success"
-                    // onClick={handlePurchaseClick}
+                      onClick={handlePurchaseClick}
                     >
                       Proceed To Buy
                     </button>
@@ -594,69 +709,7 @@ export default function Home() {
             </Fade>
           </Modal>
         </div>
-        <div>
-          <Modal
-            open={cartmodalOpen}
-            className="d-flex justify-content-center align-items-center"
-          >
-            <Fade in={cartmodalOpen}>
-              <div className="modal-content modal-dialog-scrollable bg-white h-75 w-25 p-2 rounded">
-                <div className="modal-header  p-3 d-flex justify-content-between text-white border-bottom border-2">
-
-                  <button
-                    onClick={handleCartModalClose}
-                    className="btn btn-danger me-2 p-1"
-                  >
-                    <span className="bi bi-x-lg mx-1"></span>
-                  </button>
-                </div>
-                <div className="modal-body justify-content-center">
-                  {
-                    view.map((item) => (
-
-                      <Card sx={{ maxWidth: 500 }}>
-                        <CardMedia
-                          sx={{ height:300 }}
-                          image={item.image}
-                          title="green iguana"
-                        />
-                        <CardContent>
-                          <Typography gutterBottom variant="h5" component="div">
-                            {item.title}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {item.description}
-                          </Typography>
-                        </CardContent>
-                        <CardActions>
-                          <button
-                            className="btn btn-dark bi bi-cart4 w-100 me-1"
-                            onClick={() => handleAddClick(item)}
-                          >
-                            Add Cart
-                          </button>
-                        </CardActions>
-                      </Card>
-
-                    ))
-                  }
-
-
-
-                </div>
-                <div className="modal-footer ">
-
-
-                </div>
-              </div>
-            </Fade>
-          </Modal>
-        </div>
       </div>
-
-
-
-
-    </main>
+    </div>
   );
 }
